@@ -1,3 +1,5 @@
+package randomdice
+
 import java.util.*
 import java.util.stream.Collectors
 import kotlin.system.measureTimeMillis
