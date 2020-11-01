@@ -1,41 +1,33 @@
 import colours
+from connect4_token import Token
 
-
-class Token:
-    def __init__(self, symbol, colour, is_player = True):
-        self.symbol = symbol
-        self.colour = colour
-        self.is_player = is_player
-
-    def get_formatted(self):
-        return self.colour + self.symbol + colours.RESET
-
-
-EMPTY_TOKEN = Token('○', colours.RESET, False)
-TOKEN = '◉'
+EMPTY_TOKEN = Token("EMPTY", '○', colours.RESET, False)
+FILLED_TOKEN_SYMBOL = '◉'
+WIDTH = 6
+HEIGHT = 7
 
 # Board represented in x, y format. Eg board[3][4] represents the fifth row of the fourth column
-board = [
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-    [EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN, EMPTY_TOKEN],
-]
-COLOUR_1 = Token(TOKEN, colours.RED)
-COLOUR_2 = Token(TOKEN, colours.BLUE)
+# Fancy list comprehension :)
+board = [[EMPTY_TOKEN for _ in range(WIDTH)] for _ in range(HEIGHT)]
+
+RED_TOKEN = Token("RED", FILLED_TOKEN_SYMBOL, colours.RED)
+BLUE_TOKEN = Token("BLUE", FILLED_TOKEN_SYMBOL, colours.BLUE)
 
 
 def output_board_state():
+    """
+    Outputs each line of the board in a pretty format
+    """
     for line in board:
         print('|', str.join(" | ", [token.get_formatted() for token in line]), '|')
 
     print('')
 
 
-def apply_gravity(board):
+def apply_gravity():
+    """
+    Applies gravity to all tokens, bringing them down to their minimum possible y axis
+    """
     for index, row in enumerate(board):
         if index >= len(board) - 1:
             continue
@@ -50,12 +42,7 @@ def apply_gravity(board):
                 next_row[elem_index] = elem
 
 
-def play(colour, x, y):
-    board[x][y] = colour
-    output_board_state()
-
-
-def get_highest_token(column):
+def get_highest_token(column) -> tuple:
     highest = EMPTY_TOKEN
     height = 0
     for row in board:
@@ -67,7 +54,7 @@ def get_highest_token(column):
     return highest, height
 
 
-def play_game_round(turn):
+def play_game_round(turn) -> bool:
     col = input('Which column do you want to place a counter in?\n')
     try:
         column = int(col)
@@ -75,8 +62,8 @@ def play_game_round(turn):
         print(f'Invalid column {col}. It should be a number')
         return play_game_round(turn)
 
-    if column not in range(1, 7):
-        print(f'Invalid column {col}. It should be between 1 and 6')
+    if column not in range(1, WIDTH + 1):
+        print(f'Invalid column {col}. It should be between 1 and {WIDTH}')
         return play_game_round(turn)
 
     current, row = get_highest_token(column - 1)
@@ -85,12 +72,20 @@ def play_game_round(turn):
         return play_game_round(turn)
 
     board[row - 1][column - 1] = turn
-    apply_gravity(board)
+    
+    apply_gravity()
 
     output_board_state()
+    winner = check_for_valid_line()
+    if winner is not None:
+        print("Game Over!")
+        print(f'{winner.identifier} is the winner!')
+        return True
+
+    return False
 
 
-def check_for_valid_line(board):
+def check_for_valid_line():
     """
     for each token
     if there's a token to the right, increment the count by 1 and repeat with the token on the right
@@ -99,17 +94,69 @@ def check_for_valid_line(board):
     Otherwise, reset the count and check the next token
     if there are more than 4, they win.
     """
-    count = 1
-    for row in board:
-        for index, token in enumerate(row):
-            if row[index + 1] == token:
-                count = count + 1
+    for row in range(0, HEIGHT):
+        for col in range(0, WIDTH):
+            token, length = check_for_lines_at(row, col)
+            if length >= 4:
+                return token
+    return None
 
-    pass
+
+def check_for_lines_at(row, col, count=1, compare_to=None, direction=None) -> tuple:
+    """
+    This function is a bit of a hack, mainly because of the recursion.
+    If calling from another function, all the default parameters should be used
+
+    @type row: int
+    @param row: The row to start checking for lines
+    @type col: int
+    @param col: The column to start checking for lines
+    @param count: How long the line is so far
+    @param compare_to: What each token should be compared to. Eg [BLUE_TOKEN] to check for lines of blue tokens
+    @param direction: The current direction that we are travelling in to check
+    """
+
+    # Default value at the current slot
+    if compare_to is None:
+        compare_to = board[row][col]
+
+    # No need to check for sequences of empty tokens
+    if compare_to == EMPTY_TOKEN:
+        return compare_to, 0
+
+    if direction == 'right' or direction is None:
+        # Check token to the right
+        if col < WIDTH - 1:
+            to_right = board[row][col + 1]
+            if to_right == compare_to:
+                return check_for_lines_at(row, col + 1, count + 1, compare_to, 'right')
+
+    if direction == 'below' or direction is None:
+        # Check token below
+        if row < HEIGHT - 1:
+            below = board[row + 1][col]
+            if below == compare_to:
+                return check_for_lines_at(row + 1, col, count + 1, compare_to, 'below')
+
+    if direction == 'bottom_right' or direction is None:
+        # Check token to the bottom right
+        if col < WIDTH - 1 and row < HEIGHT - 1:
+            bottom_right = board[row + 1][col + 1]
+            if bottom_right == compare_to:
+                return check_for_lines_at(row + 1, col + 1, count + 1, compare_to, 'bottom_right')
+
+    return compare_to, count
 
 
-while True:
-    print("Player 1's turn!")
-    play_game_round(COLOUR_1)
-    print("Player 2's turn!")
-    play_game_round(COLOUR_2)
+def play():
+    won = False
+    while not won:
+        print("Player 1's turn!")
+        won = play_game_round(RED_TOKEN)
+        if won:
+            break
+        print("Player 2's turn!")
+        won = play_game_round(BLUE_TOKEN)
+
+
+play()
