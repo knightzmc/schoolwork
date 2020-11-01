@@ -26,6 +26,13 @@ def setup_sqlite():
     )
     ''')
 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS column_aliases (
+        alias TEXT primary key,
+        column TEXT
+    )
+    ''')
+
     conn.commit()
     conn.close()
 
@@ -53,6 +60,16 @@ def validate_password(username, password) -> bool:
     return db_password == password
 
 
+def get_column_by_alias(alias):
+    conn = get_connection()
+    c = conn.cursor()
+
+    c.execute('SELECT column FROM column_aliases WHERE alias=?', (alias,))
+    val = c.fetchone()
+    c.close()
+    return val
+
+
 def login():
     username = input("Input Username:\n")
     if not username_exists(username):
@@ -68,6 +85,48 @@ def login():
     print(f"Hello, {username}")
 
 
+def command_prompt():
+    print('''
+    Welcome. Please select a task:
+    1. Find a Student
+    2. Add a Student
+    3. Remove a Student
+    4. View all Students
+    5. Change Password
+    6. Logout
+    7. Exit
+    ''')
+
+    task = input()
+    if task == '1':
+        return command_find_student()
+
+
+def command_find_student():
+    print('Enter a column name to search by:')
+    print('Options: first_name, last_name, id')
+    column = input()
+    column_name = get_column_by_alias(column)
+    if column_name is None:
+        print(f'Could not find column {column}')
+        return command_find_student()
+
+    print('Input value to search for')
+    value = input()
+
+    conn = get_connection()
+    c = conn.cursor()
+
+    query = f"SELECT * FROM users WHERE {column_name} = ?"
+    c.execute(query, (value,))
+    results = c.fetchall()
+    if len(results) == 0:
+        print("No Results Found.")
+        return command_find_student()
+    print(results)
+
+
 if __name__ == '__main__':
     setup_sqlite()
     login()
+    command_prompt()
