@@ -11,7 +11,7 @@ def validate_amount(amount) -> bool:
         print('You can only withdraw a multiple of £10.')
         return False
     if 10 < amount > 200:
-        print('You can only withdraw between £10 and £200. Sorry for any inconvenience caused.')
+        print('You can only withdraw between £10 and £200. Sorry for any inconvenience caused, bitch.')
         return False
     return True
 
@@ -31,13 +31,13 @@ def run():
 
     notes10, notes20 = get_note_distributions(amount)
 
-    print('Collect your money:')
+    print('Collect your money, bitch:')
     if notes20 > 0:
         print(f'      >> £20 Notes: {notes20}')
     if notes10 > 0:
         print(f'      >> £10 Notes: {notes10}')
-    print('Thank you for using Python Bank')
-    print('Have a nice day')
+    print('Thank you for using Python Bank, Bitch!')
+    print('Have a nice day, bitch!')
 
 
 if __name__ == '__main__':
