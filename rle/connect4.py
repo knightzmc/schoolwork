@@ -72,7 +72,7 @@ def play_game_round(turn) -> bool:
         return play_game_round(turn)
 
     board[row - 1][column - 1] = turn
-    
+
     apply_gravity()
 
     output_board_state()
