@@ -145,6 +145,12 @@ def check_for_lines_at(row, col, count=1, compare_to=None, direction=None) -> tu
             if bottom_right == compare_to:
                 return check_for_lines_at(row + 1, col + 1, count + 1, compare_to, 'bottom_right')
 
+    if direction == 'top_right' or direction is None:
+        # Check token to the top right
+        if col < WIDTH and row > 0:
+            bottom_right = board[row - 1][col + 1]
+            if bottom_right == compare_to:
+                return check_for_lines_at(row - 1, col + 1, count + 1, compare_to, 'top_right')
     return compare_to, count
 
 
